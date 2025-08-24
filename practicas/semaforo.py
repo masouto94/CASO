@@ -80,6 +80,7 @@ class Queue(ABC):
         if signal:
             process.execute()
             process.routeNext().dijkstra_v()
+            self.wakeUp(process.routeNext())
             return 
         process.dijkstra_p()
         if process.getCurrentStatus() < 0:
@@ -88,32 +89,24 @@ class Queue(ABC):
         else:
             process.execute()
             process.routeNext().dijkstra_v()
+            self.wakeUp(process.routeNext())
+            
     def popProcess(self, process):
         return self.queue.pop(self.queue.index(process))
     
-    def requeueProcess(self, processType: str):
-        processIndex=list(map(lambda process: process.type, self.queue)).index(processType)
-        return self.waiting.pop(processIndex)
+    def wakeUp(self, nextProcessClass):
+        for process in self.waiting:
+            if isinstance(process, nextProcessClass):
+                self.waiting.remove(process)
+                self.runProcess(process, signal=True)
+                break
     
     
     def runQueue(self):
         while any(filter(lambda process: process.status == "pending", self.queue)):
           
             for process in filter(lambda process: process.status == "pending", self.queue):
-                # process.dijkstra_p()
-                # if process.getCurrentStatus() < 0:
-                #     process.wait()
-                #     self.waiting.append(process)
-                # else:
-                #     process.execute()
-                #     process.routeNext().dijkstra_v()
-                self.runProcess(process)
-                if process.routeNext().x <= 0 and process.getCurrentStatus() <= 0:
-                    self.runProcess(self.requeueProcess(process.routeNext().processType()), True)
-                    
-                
-
-    
+                self.runProcess(process)          
 
 class ProcessQueue(Queue):
     def __init__(self):
